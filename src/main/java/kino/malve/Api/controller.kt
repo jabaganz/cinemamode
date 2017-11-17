@@ -3,6 +3,7 @@ package kino.malve.Api
 import com.google.gson.GsonBuilder
 import entities.cinemamode.Request
 import entities.cinemamode.playlist.ItemParam
+import kino.malve.Api.pojo.Config
 import kino.malve.Api.pojo.Element
 import kino.malve.Api.pojo.MovieElement
 import kino.malve.Api.pojo.MyElement
@@ -23,32 +24,26 @@ import java.io.File
 import java.util.*
 
 @RestController
-open class controller : WebSocketListener() {
+class controller : WebSocketListener() {
 
     private val gson = GsonBuilder().create()
     private val service = ApiUtils.soService
     //val basepath = "/media/A6BC83C0BC838A0F/pojos/"
     private val basepath = "D:/TestCinemamode/"
     private lateinit var currentPhase: Element
-    private var movieId = 0
-    val config: Stack<Element>
+    val config = Stack<Element>()
 
 
+    /**
+     * Websocket connection to Kodi for receiving notifications
+     */
     init {
         OkHttpClient().newWebSocket(okhttp3.Request.Builder().url("ws://localhost:9090/jsonrpc").build(), this)
-
-        config = Stack()
-        config.addAll(listOf(
-                MyElement("movie", 99, "", 80),
-                MyElement("dolby", 1, "dolby", 100),
-                MyElement("trailer ", 2, "trailer", 80),
-                MyElement("advertising", 2, "advertising", 80),
-                MyElement("music", 99, "music", 70)))
     }
 
 
     @GetMapping("/getMovies")
-    open fun greeting(): String {
+    fun greeting(): String {
         val result = service.getMovies().execute().body()
         if (result != null) {
             return gson.toJson(result.result.movies)
@@ -58,7 +53,13 @@ open class controller : WebSocketListener() {
 
     @GetMapping("/startPreProgram")
     fun startCinemamode(@RequestParam(value = "movieId") movieId: Int) {
-        this.movieId = movieId
+        //create standard config
+        startNextPhase()
+    }
+
+    @GetMapping("/startPreProgramWithConfig")
+    fun startCinemamode(@RequestParam(value = "config") config: String) {
+        gson.fromJson(config, Config::class.java)
         startNextPhase()
     }
 
@@ -74,7 +75,7 @@ open class controller : WebSocketListener() {
         clearPlaylist()
         setVolume(currentPhase.volume)
 
-        val localCurrenPhase = currentPhase
+        val localCurrenPhase = currentPhase //local variable necessary for smart casting
 
         when (localCurrenPhase) {
             is MovieElement -> startMovie(localCurrenPhase.movieId)
@@ -85,24 +86,23 @@ open class controller : WebSocketListener() {
         }
     }
 
-
-    private fun clearPlaylist() {
-        service.clear().execute()
-    }
-
+    /**
+     * called when notification via websocket is received
+     */
     override fun onMessage(webSocket: WebSocket?, text: String?) {
-        val req = GsonBuilder().create().fromJson(text, Notification::class.java)
-        println(currentPhase)
+        val req = gson.fromJson(text, Notification::class.java)
         if (req.method == "Player.OnStop" && !config.empty()) {
-            if (currentPhase.counter <= 1) {
+            if (currentPhase.counter <= 1)
                 startNextPhase()
-            } else {
-                currentPhase.counter -= 1
-            }
+            else
+                currentPhase.counter--
 
         }
     }
 
+    private fun clearPlaylist() {
+        service.clear().execute()
+    }
 
     private fun setVolume(percentage: Int) {
         service.jsonRPC(gson.toJson(Request(method = "Application.SetVolume", params = VolumeParam(percentage)))).execute()
@@ -114,7 +114,7 @@ open class controller : WebSocketListener() {
 
     fun addAll(list: List<String>) {
         list.map {
-            service.jsonRPC(gson.toJson(Request(params = PlayListParam(item = FileItem(it))))).execute()¡
+            service.jsonRPC(gson.toJson(Request(params = PlayListParam(item = FileItem(it))))).execute()
         }
     }
 
