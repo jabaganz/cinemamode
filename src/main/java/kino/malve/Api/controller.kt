@@ -1,12 +1,14 @@
 package kino.malve.Api
 
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.typeadapters.RuntimeTypeAdapterFactory
 import entities.cinemamode.Request
 import entities.cinemamode.playlist.ItemParam
 import kino.malve.Api.pojo.Config
 import kino.malve.Api.pojo.Element
 import kino.malve.Api.pojo.MovieElement
-import kino.malve.Api.pojo.MyElement
+import kino.malve.Api.pojo.PreProgramElement
 import kino.malve.kodiAPI.ApiUtils
 import kino.malve.kodiAPI.pojos.Notification.Notification
 import kino.malve.kodiAPI.pojos.item.FileItem
@@ -26,11 +28,13 @@ import java.util.*
 @RestController
 class controller : WebSocketListener() {
 
-    private val gson = GsonBuilder().create()
+
+    private val gson: Gson
     private val service = ApiUtils.soService
     //val basepath = "/media/A6BC83C0BC838A0F/pojos/"
-    private val basepath = "D:/TestCinemamode/"
-    private lateinit var currentPhase: Element
+    //private val basepath = "D:/TestCinemamode/"
+    private val basepath = "/Volumes/Volume/DataBackup/TestCinemamode"
+    private var currentPhase: Element? = null
     val config = Stack<Element>()
 
 
@@ -39,33 +43,53 @@ class controller : WebSocketListener() {
      */
     init {
         OkHttpClient().newWebSocket(okhttp3.Request.Builder().url("ws://localhost:9090/jsonrpc").build(), this)
+        gson = GsonBuilder()
+                .registerTypeAdapterFactory(
+                        RuntimeTypeAdapterFactory
+                                .of(Element::class.java, "javaType")
+                                .registerSubtype(MovieElement::class.java, "movie")
+                                .registerSubtype(PreProgramElement::class.java, "element"))
+                .create()
     }
 
-
+    /**
+     * Abfrage aller verfügbaren Filme
+     */
     @GetMapping("/getMovies")
     fun greeting(): String {
         val result = service.getMovies().execute().body()
-        if (result != null) {
-            return gson.toJson(result.result.movies)
+        result?.let {
+            return gson.toJson(it.result.movies)
         }
+
         return ""
     }
 
+    /**
+     * Starten des Vorprogramms (in den meisten Fällen Musik)
+     */
     @GetMapping("/startPreProgram")
     fun startCinemamode(@RequestParam(value = "movieId") movieId: Int) {
-        //create standard config
+        //ToDo:create standard config
         startNextPhase()
     }
 
+    /**
+     * Starten des Vorprogramms mit eigener Konfiguration
+     */
     @GetMapping("/startPreProgramWithConfig")
     fun startCinemamode(@RequestParam(value = "config") config: String) {
-        gson.fromJson(config, Config::class.java)
+        this.config.clear()
+        this.currentPhase = null
+        val listConfig = gson.fromJson(config, Config::class.java)
+        listConfig.elements.reversed().stream().forEach { this.config.push(it) }
+
         startNextPhase()
     }
 
     @GetMapping("/startCinemamode")
     fun startCinemamode() {
-        currentPhase.counter = 0
+        currentPhase?.counter = 0
         clearPlaylist()
     }
 
@@ -73,13 +97,13 @@ class controller : WebSocketListener() {
     fun startNextPhase() {
         currentPhase = config.pop()
         clearPlaylist()
-        setVolume(currentPhase.volume)
+        currentPhase?.let { setVolume(it.volume) }
 
         val localCurrenPhase = currentPhase //local variable necessary for smart casting
 
         when (localCurrenPhase) {
             is MovieElement -> startMovie(localCurrenPhase.movieId)
-            is MyElement -> {
+            is PreProgramElement -> {
                 addAll(getRandomFiles(localCurrenPhase.itemsPath, localCurrenPhase.counter))
                 startPlaylist()
             }
@@ -92,11 +116,12 @@ class controller : WebSocketListener() {
     override fun onMessage(webSocket: WebSocket?, text: String?) {
         val req = gson.fromJson(text, Notification::class.java)
         if (req.method == "Player.OnStop" && !config.empty()) {
-            if (currentPhase.counter <= 1)
-                startNextPhase()
-            else
-                currentPhase.counter--
-
+            currentPhase?.let {
+                if (it.counter <= 1)
+                    startNextPhase()
+                else
+                    it.counter -= 1
+            }
         }
     }
 
