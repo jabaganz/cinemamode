@@ -19,6 +19,7 @@ import kino.malve.kodiAPI.pojos.param.VolumeParam
 import okhttp3.OkHttpClient
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -55,6 +56,7 @@ class controller : WebSocketListener() {
     /**
      * Abfrage aller verfügbaren Filme
      */
+    @CrossOrigin
     @GetMapping("/getMovies")
     fun greeting(): String {
         val result = service.getMovies().execute().body()
