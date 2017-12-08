@@ -1,0 +1,49 @@
+{
+  "elements": [
+    {
+      "type": "music",
+      "javaType": "element",
+      "volume": 70,
+      "lightStatus": true,
+      "format16To9": true,
+      "counter": 99,
+      "itemPath": "/music"
+    },
+    {
+      "type": "advertising",
+      "javaType": "element",
+      "volume": 80,
+      "lightStatus": false,
+      "format16To9": false,
+      "counter": 2,
+      "itemPath": "/advertising"
+    },
+    {
+      "type": "trailer",
+      "javaType": "element",
+      "volume": 80,
+      "lightStatus": false,
+      "format16To9": true,
+      "counter": 2,
+      "itemPath": "/trailer"
+    },
+    {
+      "type": "dolby",
+      "javaType": "element",
+      "volume": 100,
+      "lightStatus": false,
+      "format16To9": true,
+      "counter": 1,
+      "itemPath": "/dolby"
+    },
+    {
+      "type": "movie",
+      "javaType": "movie",
+      "volume": 75,
+      "lightStatus": true,
+      "format16To9": true,
+      "counter": 1,
+      "movieId": 2
+    }
+  ]
+}
