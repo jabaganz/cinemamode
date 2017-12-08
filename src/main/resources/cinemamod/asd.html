@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="cinemamode.css">
+    <script src="cinemamode.js"></script>
+</head>
+<body onload="queryMmovies()">
+<div class="container-fluid">
+    <div class="col-sm-4">
+        <ul class="list-group" ondrop="drop(event)" ondragover="allowDrop(event)">
+            Konfiguration
+        </ul>
+    </div>
+
+    <div class="col-sm-6">
+        <ul class="list-group" ondrop="drop(event)" ondragover="allowDrop(event)">
+            nutzbare Elemente
+            <li class="list-group-item src" id="music" draggable="true" ondragstart="drag(event)">
+                <h3>Music</h3>
+                Ligth: <input title="lightStatus" type="checkbox">
+                16:9? <input title="format16To9" type="checkbox">
+                volume: <input title="volume" type="number" min="0" max="100" value="70">
+                counter: <input title="counter" type="number" min="0" max="100">
+            </li>
+            <li class="list-group-item src" id="trailer" draggable="true" ondragstart="drag(event)">
+                <h3>Trailer</h3>
+                Ligth: <input title="lightStatus" type="checkbox">
+                16:9? <input title="format16To9" type="checkbox">
+                volume: <input title="volume" type="number" min="0" max="100" value="75">
+                counter: <input title="counter" type="number" min="0" max="100">
+            </li>
+            <li class="list-group-item src" id="advertising" draggable="true" ondragstart="drag(event)">
+                <h3>Advertising</h3>
+                Ligth: <input title="lightStatus" type="checkbox">
+                16:9? <input title="format16To9" type="checkbox">
+                volume: <input title="volume" type="number" min="0" max="100" value="75">
+                counter: <input title="counter" type="number" min="0" max="100">
+            </li>
+            <li class="list-group-item src" id="dolby" draggable="true" ondragstart="drag(event)">
+                <h3>Dolby-Trailer</h3>
+                Ligth: <input title="lightStatus" type="checkbox">
+                16:9? <input title="format16To9" type="checkbox">
+                volume: <input title="volume" type="number" min="0" max="100" value="100">
+                counter: <input title="counter" type="number" min="0" max="100">
+            </li>
+            <li class="list-group-item src" id="movie" draggable="true" ondragstart="drag(event)">
+                <h3>Movie</h3>
+                Ligth: <input title="lightStatus" type="checkbox">
+                16:9? <input title="format16To9" type="checkbox">
+                volume: <input title="volume" type="number" min="0" max="100" value="70">
+                counter: <input title="counter" type="number" min="0" max="100">
+                movie: <select title="movieId" id="movieSelection"></select>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
