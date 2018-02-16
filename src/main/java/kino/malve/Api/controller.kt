@@ -19,12 +19,11 @@ import kino.malve.kodiAPI.pojos.param.VolumeParam
 import okhttp3.OkHttpClient
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.web.bind.annotation.*
 import java.io.File
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 @RestController
 class controller : WebSocketListener() {
@@ -32,11 +31,22 @@ class controller : WebSocketListener() {
 
     private val gson: Gson
     private val service = ApiUtils.soService
-    //val basepath = "/media/A6BC83C0BC838A0F/pojos/"
     //private val basepath = "D:/TestCinemamode/"
-    private val basepath = "/Volumes/Volume/DataBackup/TestCinemamode"
     private var currentPhase: Element? = null
     private val config = Stack<Element>()
+
+
+    /**
+     * Spring properties
+     */
+    @Value("\${base.path}")
+    lateinit var basepath: String
+    @Value("\${remote.houseCode}")
+    lateinit var remoteHouseCode: String
+    @Value("\${remote.pathToPowerswitch}")
+    lateinit var pathToPowerswitch: String
+    @Value("\${remote.address.light}")
+    lateinit var remoteAddressLight: String
 
 
     /**
@@ -80,8 +90,8 @@ class controller : WebSocketListener() {
     /**
      * Starten des Vorprogramms mit eigener Konfiguration
      */
-    @GetMapping("/startPreProgramWithConfig")
-    fun startCinemamode(@RequestParam(value = "config") config: String) {
+    @PostMapping("/startPreProgramWithConfig")
+    fun startCinemamode(@RequestBody config: String) {
         this.config.clear()
         this.currentPhase = null
         gson.fromJson(config, Config::class.java)
@@ -110,6 +120,7 @@ class controller : WebSocketListener() {
                     startPlaylist()
                 }
             }
+            determineAmbientLight(it.lightStatus)
         }
     }
 
@@ -127,6 +138,15 @@ class controller : WebSocketListener() {
             }
         }
     }
+
+    fun determineAmbientLight(lightStatus: Boolean) {
+        Thread {
+            Runtime.getRuntime()
+                    .exec("$pathToPowerswitch $remoteHouseCode $remoteAddressLight ${if (lightStatus) 1 else 0}")
+                    .waitFor(2, TimeUnit.SECONDS)
+        }.start()
+    }
+
 
     private fun clearPlaylist() {
         service.clear().execute()
