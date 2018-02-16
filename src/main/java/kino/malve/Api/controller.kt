@@ -36,14 +36,17 @@ class controller : WebSocketListener() {
     //private val basepath = "D:/TestCinemamode/"
     private val basepath = "/Volumes/Volume/DataBackup/TestCinemamode"
     private var currentPhase: Element? = null
-    val config = Stack<Element>()
+    private val config = Stack<Element>()
 
 
     /**
      * Websocket connection to Kodi for receiving notifications
      */
     init {
-        OkHttpClient().newWebSocket(okhttp3.Request.Builder().url("ws://localhost:9090/jsonrpc").build(), this)
+        OkHttpClient()
+                .newWebSocket(okhttp3.Request.Builder()
+                        .url("ws://localhost:9090/jsonrpc")
+                        .build(), this)
         gson = GsonBuilder()
                 .registerTypeAdapterFactory(
                         RuntimeTypeAdapterFactory
@@ -59,11 +62,9 @@ class controller : WebSocketListener() {
     @CrossOrigin
     @GetMapping("/getMovies")
     fun greeting(): String {
-        val result = service.getMovies().execute().body()
-        result?.let {
+        service.getMovies().execute().body()?.let {
             return gson.toJson(it.result.movies)
         }
-
         return ""
     }
 
@@ -83,31 +84,31 @@ class controller : WebSocketListener() {
     fun startCinemamode(@RequestParam(value = "config") config: String) {
         this.config.clear()
         this.currentPhase = null
-        val listConfig = gson.fromJson(config, Config::class.java)
-        listConfig.elements.reversed().stream().forEach { this.config.push(it) }
-
+        gson.fromJson(config, Config::class.java)
+                ?.elements
+                ?.reversed()
+                ?.stream()
+                ?.forEach { this.config.push(it) }
         startNextPhase()
     }
 
     @GetMapping("/startCinemamode")
     fun startCinemamode() {
-        currentPhase?.counter = 0
+        this.currentPhase?.counter = 0
         clearPlaylist()
     }
 
-
-    fun startNextPhase() {
-        currentPhase = config.pop()
+    private fun startNextPhase() {
         clearPlaylist()
-        currentPhase?.let { setVolume(it.volume) }
-
-        val localCurrenPhase = currentPhase //local variable necessary for smart casting
-
-        when (localCurrenPhase) {
-            is MovieElement -> startMovie(localCurrenPhase.movieId)
-            is PreProgramElement -> {
-                addAll(getRandomFiles(localCurrenPhase.itemsPath, localCurrenPhase.counter))
-                startPlaylist()
+        this.currentPhase = config.pop()
+        this.currentPhase?.let {
+            setVolume(it.volume)
+            when (it) {
+                is MovieElement -> startMovie(it.movieId)
+                is PreProgramElement -> {
+                    addAll(getRandomFiles(it.itemsPath, it.counter))
+                    startPlaylist()
+                }
             }
         }
     }
@@ -118,7 +119,7 @@ class controller : WebSocketListener() {
     override fun onMessage(webSocket: WebSocket?, text: String?) {
         val req = gson.fromJson(text, Notification::class.java)
         if (req.method == "Player.OnStop" && !config.empty()) {
-            currentPhase?.let {
+            this.currentPhase?.let {
                 if (it.counter <= 1)
                     startNextPhase()
                 else
