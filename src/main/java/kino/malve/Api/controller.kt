@@ -112,7 +112,6 @@ class controller : WebSocketListener() {
         clearPlaylist()
         this.currentPhase = config.pop()
         this.currentPhase?.let {
-            setVolume(it.volume)
             when (it) {
                 is MovieElement -> startMovie(it.movieId)
                 is PreProgramElement -> {
@@ -120,7 +119,8 @@ class controller : WebSocketListener() {
                     startPlaylist()
                 }
             }
-            determineAmbientLight(it.lightStatus)
+            setVolume(it.volume)
+            setAmbientLight(it.lightStatus)
         }
     }
 
@@ -139,7 +139,7 @@ class controller : WebSocketListener() {
         }
     }
 
-    fun determineAmbientLight(lightStatus: Boolean) {
+    fun setAmbientLight(lightStatus: Boolean) {
         Thread {
             Runtime.getRuntime()
                     .exec("$pathToPowerswitch $remoteHouseCode $remoteAddressLight ${if (lightStatus) 1 else 0}")
